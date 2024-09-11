@@ -1,0 +1,24 @@
+{
+  "name": "hometask-45",
+  "version": "1.0.0",
+  "description": "simple API on typescript",
+  "author": "Sergey Emelyanov",
+  "license": "ISC",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "dev": "nodemon src/index.ts"
+  },
+  "dependencies": {
+    "express": "4.20.0",
+    "sqlite3": "5.1.7"
+  },
+  "devDependencies": {
+    "@types/express": "4.17.21",
+    "@types/node": "22.5.4",
+    "@types/sqlite3": "3.1.11",
+    "nodemon": "3.1.4",
+    "ts-node": "10.9.2",
+    "typescript": "5.6.2"
+  }
+}
