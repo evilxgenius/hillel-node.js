@@ -9,48 +9,56 @@ const student = new Student();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/students',async (req, res, next) => {
-    const data = await student.findAll();
-    res.status(200).json(data);
+app.get('/students', (req, res) => {
+    student.findAll()
+        .then(data => res.status(200).json(data))
+        .catch(err => res.status(500).json({ error: err.message }));
 });
 
-app.get('/students/:id', async (req, res) => {
-    const data = await student.find(req.params.id);
-
-    if (!data) return res.status(404).json({ error: 'No such student found.' });
-
-    res.status(200).json(data);
+app.get('/students/:id', (req, res, next) => {
+    student.find(req.params.id)
+        .then(data => {
+            if (data) res.status(200).json(data);
+            else res.status(404).json({ error: 'No such student found.' });
+        })
+        .catch(err => res.status(500).json({ error: err.message } ));
 });
 
-app.post('/students', async (req, res) => {
+app.post('/students', (req, res) => {
     const payload = req.body;
 
     if (Object.keys(payload).length === 0) return res.status(422).json({ error: 'Payload is empty!' });
 
-    const data = await student.create(payload);
-    res.status(201).json({ _id: data.insertedId });
+    student.create(payload)
+        .then(data => res.status(201).json({ _id: data.insertedId }))
+        .catch(err => res.status(500).json({ error: err.message } ));
 });
 
-app.patch('/students/:id', async (req, res) => {
+app.patch('/students/:id', (req, res) => {
     const id = req.params.id;
     const payload = req.body;
 
     if (Object.keys(payload).length === 0) return res.status(422).json({ error: 'Payload is empty!' });
 
-    const data = await student.update(id, payload);
+    student.update(id, payload)
+        .then(data => {
+            if (data.matchedCount === 0) return res.status(404).json({ error: 'No such student found.' });
 
-    if (data.matchedCount === 0) return res.status(404).json({ error: 'No such student found.' });
-
-    res.status(200).json({ _id: id });
+            res.status(200).json({ _id: id });
+        })
+        .catch(err => res.status(500).json({ error: err.message } ));
 });
 
-app.delete('/students/:id', async (req, res) => {
+app.delete('/students/:id', (req, res) => {
     const id = req.params.id;
-    const data = await student.destroy(id);
 
-    if (data.deletedCount === 0) return res.status(404).json({ error: 'No such student found.' });
+    student.destroy(id)
+        .then(data => {
+            if (data.deletedCount === 0) return res.status(404).json({ error: 'No such student found.' });
 
-    res.status(200).json({ _id: id });
+            res.status(200).json({ _id: id });
+        })
+        .catch(err => res.status(500).json({ error: err.message } ));
 });
 
 app.listen(port, () => {
