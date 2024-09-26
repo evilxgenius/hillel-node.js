@@ -33,8 +33,7 @@ export default class Cart {
     }
 
 
-    static async findOrCreateByUserId(userId) {
-        const user = await User.find(userId);
+    static async findOrCreateByUser(user) {
         const cart = carts.find(c => c.userId === user.id) || new Cart(user.id);
 
         if (cart.id) return cart;
