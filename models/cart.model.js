@@ -1,14 +1,16 @@
 import crypto from "node:crypto";
-import { carts } from "../storage.js";
-import User from "./user.model.js";
+
 import Product from "./product.model.js";
+import { JsonFile } from "../services/jsonFile.service.js";
 
 export default class Cart {
-    constructor(userId) {
-        this.id = null;
+    static STORAGE = 'storage/carts.store.json';
+
+    constructor({ id, userId, products, totalPrice }) {
+        this.id = id ?? null;
         this.userId = userId;
-        this.products = [];
-        this.totalPrice = 0;
+        this.products = products || [];
+        this.totalPrice = totalPrice ?? 0;
     }
 
     toJSON() {
@@ -32,14 +34,21 @@ export default class Cart {
         return this;
     }
 
+    static async findAll() {
+        return JsonFile.read(Cart.STORAGE).map(c => new Cart(c));
+    }
 
     static async findOrCreateByUser(user) {
-        const cart = carts.find(c => c.userId === user.id) || new Cart(user.id);
+        let cart = JsonFile.findBy(this.STORAGE, { userId: user.id });
 
-        if (cart.id) return cart;
+        if (cart?.id) {
+            return new Cart(cart);
+        } else {
+            cart = new Cart({ userId: user.id });
+        }
 
         cart.id = crypto.randomUUID();
-        carts.push(cart);
+        JsonFile.append(this.STORAGE, cart);
 
         return cart;
     }

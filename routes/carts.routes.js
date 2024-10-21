@@ -1,45 +1,68 @@
 import express from 'express';
-import Cart from '../models/cart.model.js';
-import Product from "../models/product.model.js";
 import ApiError from "../errors/api.error.js";
-import { isAuthenticated } from "../services/auth.service.js";
-import { findCart } from "../services/carts.service.js";
-import { findProduct } from "../services/products.service.js";
+import Cart from '../models/cart.model.js';
+import { isAuthenticated } from "../middlewares/auth.middleware.js";
+import { findProduct } from "../middlewares/products.middleware.js";
+import { findCarts } from "../middlewares/carts.middleware.js";
+import { JsonFile } from '../services/jsonFile.service.js';
 
 const cartsRouter = express();
 
 cartsRouter.use(isAuthenticated);
-
-cartsRouter.put('/:productId', findCart, findProduct, (req, res, next) => {
+cartsRouter.put('/:productId', findCarts, findProduct, async (req, res, next) => {
     try {
-        req.locals.cart.products.push(req.locals.product.id)
-        res.status(200).send('OK');
-    } catch (err) {
-        next(new ApiError(500, err.message));
-    }
-});
-
-cartsRouter.delete('/:productId', findCart, findProduct, async (req, res, next) => {
-    try {
-        const cart = req.locals.cart;
         const product = req.locals.product;
+        const { current: cart, all: carts } = req.locals.carts;
 
-        if (!cart.products.includes(product.id)) {
-            next(new ApiError(404, "product doesn't found in cart"));
-            return;
-        }
+        const updatedCarts = carts.map((c) => {
+            if (c.id === cart.id) {
+                cart.products.push(product.id);
+                return cart;
+            }
 
-        cart.products = cart.products.filter(i => i !== req.locals.product.id)
-        res.status(200).send({ productId: product.id });
+            return c;
+        });
+
+        JsonFile.write(Cart.STORAGE, updatedCarts);
+        res.status(200).send(cart);
     } catch (err) {
         next(new ApiError(500, err.message));
     }
 });
 
-cartsRouter.post('/checkout', findCart, (req, res, next) => {
-    req.locals.cart.checkout()
-        .then(c => res.status(200).send(c))
-        .catch(err => next(new ApiError(404, err.message)));
+cartsRouter.delete('/:productId', findCarts, findProduct, async (req, res, next) => {
+    try {
+        const product = req.locals.product;
+        const { current: cart, all: carts } = req.locals.carts;
+
+        const updatedCarts = carts.map((c) => {
+            if (c.id === cart.id) {
+                cart.products = cart.products.filter(pId => pId !== req.locals.product.id);
+                return cart;
+            }
+
+            return c;
+        });
+
+        JsonFile.write(Cart.STORAGE, updatedCarts);
+        res.status(200).send(cart);
+    } catch (err) {
+        next(new ApiError(500, err.message));
+    }
+});
+
+cartsRouter.post('/checkout', findCarts, async (req, res, next) => {
+    try {
+        const { current: cart, all: carts } = req.locals.carts;
+        const updatedCarts = carts.map((c) => c.id === cart.id ? cart : c);
+        
+        await cart.checkout();
+
+        JsonFile.write(Cart.STORAGE, updatedCarts);
+        res.status(200).send(cart);
+    } catch (err) {
+        next(new ApiError(500, err.message));
+    }
 });
 
 export default cartsRouter;
