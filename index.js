@@ -2,12 +2,13 @@ import express from 'express';
 import usersRouter from './routes/users.routes.js';
 import productsRouter from "./routes/products.routes.js";
 import cartsRouter from "./routes/carts.routes.js";
+import { initializeStorage } from './services/initializer.service.js';
 
 const app = express();
 const port = process.env.PORT || 3001;
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded());
 app.use((req, _res, next) => (req.locals = {}) && next());
 
 app.use('/api', usersRouter);
@@ -19,5 +20,6 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(port, () => {
+    initializeStorage();
     console.log(`open in browser -> http://localhost:${port}`)
 });
